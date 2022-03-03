@@ -299,9 +299,11 @@ class ImageOptimize extends Plugin
             function (Event $event) {
                 /** @var CraftVariable $variable */
                 $variable = $event->sender;
-                $variable->set('imageOptimize', [
-                    'class' => ImageOptimizeVariable::class,
-                ]);
+                $variables = ['class' => ImageOptimizeVariable::class];
+                if (!strstr(Craft::$app->request->fullPath, 'entry-revisions/save-draft')) {
+                    $variables['viteService'] = $this->vite;
+                }
+                $variable->set('imageOptimize', $variables);
             }
         );
 
@@ -626,22 +628,22 @@ class ImageOptimize extends Plugin
             Plugins::class,
             Plugins::EVENT_AFTER_LOAD_PLUGINS,
             function () {
-                    // Install these only after all other plugins have loaded
-                    Event::on(
-                        View::class,
-                        View::EVENT_REGISTER_CP_TEMPLATE_ROOTS,
-                        function (RegisterTemplateRootsEvent $e) {
-                            // Register the root directodies
-                            $allImageTransformTypes = ImageOptimize::$plugin->optimize->getAllImageTransformTypes();
-                            /** @var ImageTransformInterface $imageTransformType */
-                            foreach ($allImageTransformTypes as $imageTransformType) {
-                                list($id, $baseDir) = $imageTransformType::getTemplatesRoot();
-                                if (is_dir($baseDir)) {
-                                    $e->roots[$id] = $baseDir;
-                                }
+                // Install these only after all other plugins have loaded
+                Event::on(
+                    View::class,
+                    View::EVENT_REGISTER_CP_TEMPLATE_ROOTS,
+                    function (RegisterTemplateRootsEvent $e) {
+                        // Register the root directodies
+                        $allImageTransformTypes = ImageOptimize::$plugin->optimize->getAllImageTransformTypes();
+                        /** @var ImageTransformInterface $imageTransformType */
+                        foreach ($allImageTransformTypes as $imageTransformType) {
+                            list($id, $baseDir) = $imageTransformType::getTemplatesRoot();
+                            if (is_dir($baseDir)) {
+                                $e->roots[$id] = $baseDir;
                             }
                         }
-                    );
+                    }
+                );
             }
         );
     }
